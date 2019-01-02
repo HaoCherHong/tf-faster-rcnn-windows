@@ -98,6 +98,13 @@ def voc_eval(detpath,
   # assumes annotations are in annopath.format(imagename)
   # assumes imagesetfile is a text file with each line an image name
   # cachedir caches the annotations in a pickle file
+  ann_base_dir = os.path.abspath(
+    os.path.join(
+      os.path.dirname(imagesetfile),
+      '..',
+      '..'
+    )
+  )
 
   # first load gt
   if not os.path.isdir(cachedir):
@@ -112,15 +119,17 @@ def voc_eval(detpath,
     # load annotations
     recs = {}
     for i, imagename in enumerate(imagenames):
-      recs[imagename] = parse_rec(annopath.format(imagename))
+      recs[imagename] = parse_rec(os.path.join(ann_base_dir, 'Annotations', annopath.format(imagename)))
+      # recs[imagename] = parse_rec("data/VOCdevkit2007/VOC2007/Annotations/" + annopath.format(imagename))
       if i % 100 == 0:
         print('Reading annotation for {:d}/{:d}'.format(
           i + 1, len(imagenames)))
     # save
     print('Saving cached annotations to {:s}'.format(cachefile))
-    with open(cachefile, 'w') as f:
+    with open(cachefile, 'wb') as f:
       pickle.dump(recs, f)
   else:
+    print('Loading cached annotations from {:s}'.format(cachefile))
     # load
     with open(cachefile, 'rb') as f:
       try:

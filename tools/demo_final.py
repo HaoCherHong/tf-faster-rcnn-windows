@@ -22,7 +22,6 @@ from model.nms_wrapper import nms
 
 from utils.timer import Timer
 import tensorflow as tf
-import matplotlib.pyplot as plt
 import numpy as np
 import os, cv2
 
@@ -33,37 +32,8 @@ from final.config import CLASSES
 
 DEMO_IMAGES_DIR = os.path.join('data/final/demo')
 
-def vis_detections(im, class_name, dets, thresh=0.5):
-    """Draw detected bounding boxes."""
-    inds = np.where(dets[:, -1] >= thresh)[0]
-    if len(inds) == 0:
-        return
+FONT = cv2.FONT_HERSHEY_SIMPLEX
 
-    im = im[:, :, (2, 1, 0)]
-    fig, ax = plt.subplots(figsize=(12, 12))
-    ax.imshow(im, aspect='equal')
-    for i in inds:
-        bbox = dets[i, :4]
-        score = dets[i, -1]
-
-        ax.add_patch(
-            plt.Rectangle((bbox[0], bbox[1]),
-                          bbox[2] - bbox[0],
-                          bbox[3] - bbox[1], fill=False,
-                          edgecolor='red', linewidth=3.5)
-            )
-        ax.text(bbox[0], bbox[1] - 2,
-                '{:s} {:.3f}'.format(class_name, score),
-                bbox=dict(facecolor='blue', alpha=0.5),
-                fontsize=14, color='white')
-
-    ax.set_title(('{} detections with '
-                  'p({} | box) >= {:.1f}').format(class_name, class_name,
-                                                  thresh),
-                  fontsize=14)
-    plt.axis('off')
-    plt.tight_layout()
-    plt.draw()
 
 def demo(sess, net, image_name):
     """Detect object classes in an image using pre-computed object proposals."""
@@ -72,6 +42,9 @@ def demo(sess, net, image_name):
     im_file = os.path.join(DEMO_IMAGES_DIR, image_name)
     assert os.path.exists(im_file), "Image does not exist: {}".format(im_file)
     im = cv2.imread(im_file)
+
+    # cv2.imshow('image_name', im)
+    # cv2.waitKey(0)
 
     # Detect all object classes and regress object bounds
     timer = Timer()
@@ -91,14 +64,35 @@ def demo(sess, net, image_name):
                           cls_scores[:, np.newaxis])).astype(np.float32)
         keep = nms(dets, NMS_THRESH)
         dets = dets[keep, :]
-        vis_detections(im, cls, dets, thresh=CONF_THRESH)
+        
+        inds = np.where(dets[:, -1] >= CONF_THRESH)[0]
+        if len(inds) == 0:
+            continue
+
+        for i in inds:
+            bbox = dets[i, :4]
+            score = dets[i, -1]
+
+            pt1 = (bbox[0], bbox[1])
+            pt2 = (bbox[2], bbox[3])
+            pt3 = (int(bbox[0] - 2), int(bbox[1] - 2))
+            
+            cv2.rectangle(im, pt1, pt2, (64, 64, 255), 2)
+            cv2.putText(im, cls, pt1, FONT, 1, (0, 0, 64), 2, cv2.LINE_AA)
+            cv2.putText(im, cls, pt3, FONT, 1, (32, 32, 186), 2, cv2.LINE_AA)
+
+    cv2.destroyAllWindows()
+    cv2.imshow('image_name', im)
+    
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
 
 if __name__ == '__main__':
     cfg.TEST.HAS_RPN = True  # Use RPN for proposals
     cfg.USE_GPU_NMS =False
 
     # model path
-    tfmodel = os.path.join('output', 'res101', 'voc_final_trainval', 'default', 'res101_faster_rcnn_iter_1000.ckpt')
+    tfmodel = os.path.join('output', 'res101', 'voc_final_trainval', 'default', 'res101_faster_rcnn_iter_5000.ckpt')
 
     print(tfmodel)							  
     if not os.path.isfile(tfmodel + '.meta'):

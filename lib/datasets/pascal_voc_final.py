@@ -35,7 +35,6 @@ class pascal_voc_final(imdb):
     self._data_path = os.path.join(self._devkit_path, 'VOC')
     self._classes = CLASSES
     self._class_to_ind = dict(list(zip(self.classes, list(range(self.num_classes)))))
-    self._image_ext = '.jpg'
     self._image_index = self._load_image_set_index()
     # Default to roidb handler
     self._roidb_handler = self.gt_roidb
@@ -65,7 +64,7 @@ class pascal_voc_final(imdb):
     Construct an image path from the image's "index" identifier.
     """
     image_path = os.path.join(self._data_path, 'JPEGImages',
-                              index + self._image_ext)
+                              index)
     assert os.path.exists(image_path), \
       'Path does not exist: {}'.format(image_path)
     return image_path
@@ -145,7 +144,7 @@ class pascal_voc_final(imdb):
     Load image and bounding boxes info from XML file in the PASCAL VOC
     format.
     """
-    filename = os.path.join(self._data_path, 'Annotations', index + '.xml')
+    filename = os.path.join(self._data_path, 'Annotations', os.path.splitext(index)[0] + '.xml')
     assert os.path.exists(filename), \
       'annotation data not found at: {}'.format(filename)
     tree = ET.parse(filename)
